@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resources - Campus CRM</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="brand">
+            <span class="material-icons">school</span>
+            CRM
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><span class="material-icons">dashboard</span> Dashboard</a></li>
+            <li><a href="resources.html" class="active"><span class="material-icons">meeting_room</span> Resources</a>
+            </li>
+            <li><a href="bookings.html"><span class="material-icons">class</span> Bookings</a></li>
+            <li><a href="#"><span class="material-icons">settings</span> Settings</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h2>Resources</h2>
+            <p style="color: var(--text-muted);">Manage and view all campus facilities</p>
+        </header>
+
+        <div class="controls-bar">
+            <div class="search-box">
+                <span class="material-icons">search</span>
+                <input type="text" id="resource-search" placeholder="Search resources...">
+            </div>
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="ALL">All</button>
+                <button class="filter-btn" data-filter="HALL">Halls</button>
+                <button class="filter-btn" data-filter="CLASSROOM">Classrooms</button>
+                <button class="filter-btn" data-filter="LAB">Labs</button>
+            </div>
+        </div>
+
+        <div class="resources-grid" id="resources-grid">
+            <!-- Resource Cards will be injected here -->
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Inline script for page-specific logic or load from app.js
+        document.addEventListener('DOMContentLoaded', () => {
+            // Re-using specific functions might require module restructuring or just global exposure
+            // For simplicity, we'll let app.js handle common stuff or add specific logic here/there
+            loadResourcesPage();
+        });
+    </script>
+</body>
+
+</html>

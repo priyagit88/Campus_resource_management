@@ -1,8 +1,17 @@
 const API_URL = 'http://localhost:3000/api';
 
 document.addEventListener('DOMContentLoaded', () => {
-    fetchResources();
-    fetchStats();
+    // Determine which page we are on
+    const path = window.location.pathname;
+    if (path.includes('resources.html')) {
+        loadResourcesPage();
+    } else if (path.includes('bookings.html')) {
+        loadBookingsPage();
+    } else {
+        // Dashboard by default
+        fetchResources();
+        fetchStats();
+    }
 });
 
 async function fetchStats() {
@@ -124,4 +133,189 @@ function renderCharts(data) {
             }
         }
     });
+}
+
+// Resources Page Logic
+let allResources = [];
+
+async function loadResourcesPage() {
+    try {
+        const response = await fetch(`${API_URL}/resources`);
+        allResources = await response.json();
+
+        const grid = document.getElementById('resources-grid');
+        const searchInput = document.getElementById('resource-search');
+        const filters = document.querySelectorAll('.filter-btn');
+
+        // Initial Render
+        renderResourceGrid(allResources);
+
+        // Search Listener
+        searchInput.addEventListener('input', (e) => {
+            filterResources(e.target.value, document.querySelector('.filter-btn.active').dataset.filter);
+        });
+
+        // Filter Listeners
+        filters.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filters.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                filterResources(searchInput.value, btn.dataset.filter);
+            });
+        });
+
+    } catch (error) {
+        console.error('Error loading resources:', error);
+    }
+}
+
+function renderResourceGrid(resources) {
+    const grid = document.getElementById('resources-grid');
+    grid.innerHTML = '';
+
+    resources.forEach(r => {
+        const statusClass = r.occupied ? 'status-occupied' : 'status-empty';
+        const statusText = r.occupied ? 'Occupied' : 'Available';
+        const until = r.occupied ? `<br><small>Until: ${new Date(r.occupied_until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>` : '';
+
+        const card = document.createElement('div');
+        card.className = 'resource-card';
+        card.innerHTML = `
+            <div class="rc-header">
+                <div>
+                    <div class="rc-title">${r.name}</div>
+                    <div class="rc-type">${r.type}</div>
+                </div>
+                <span class="status-badge ${statusClass}">${statusText}${until}</span>
+            </div>
+            <div class="rc-details">
+                <div><span class="material-icons" style="font-size: 16px;">people</span> Capacity: ${r.capacity}</div>
+                ${r.current_purpose ? `<div><span class="material-icons" style="font-size: 16px;">event</span> ${r.current_purpose}</div>` : ''}
+            </div>
+            <div class="rc-features">
+                ${r.features || 'No specific features'}
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function filterResources(searchTerm, category) {
+    const term = searchTerm.toLowerCase();
+    const filtered = allResources.filter(r => {
+        const matchesSearch = r.name.toLowerCase().includes(term) || (r.features && r.features.toLowerCase().includes(term));
+        const matchesCategory = category === 'ALL' || r.type === category;
+        return matchesSearch && matchesCategory;
+    });
+    renderResourceGrid(filtered);
+    renderResourceGrid(filtered);
+}
+
+// Bookings Page Logic
+async function loadBookingsPage() {
+    const modal = document.getElementById('booking-modal');
+    const newBtn = document.getElementById('new-booking-btn');
+    const closeBtn = document.querySelector('.close-modal');
+    const form = document.getElementById('booking-form');
+
+    // Fetch and render bookings
+    fetchBookings();
+
+    // Setup Modal
+    newBtn.onclick = async () => {
+        await populateResourceSelect();
+        modal.style.display = "block";
+    }
+    closeBtn.onclick = () => modal.style.display = "none";
+    window.onclick = (event) => {
+        if (event.target == modal) modal.style.display = "none";
+    }
+
+    // Handle Form Submit
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const bookingData = {
+            resource_id: document.getElementById('booking-resource').value,
+            start_time: document.getElementById('booking-start').value,
+            end_time: document.getElementById('booking-end').value,
+            purpose: document.getElementById('booking-purpose').value
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/bookings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookingData)
+            });
+
+            if (response.ok) {
+                alert('Booking created successfully!');
+                modal.style.display = "none";
+                form.reset();
+                fetchBookings(); // Refresh list
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.error}`);
+            }
+        } catch (err) {
+            console.error('Booking failed:', err);
+            alert('Failed to connect to server.');
+        }
+    });
+}
+
+async function fetchBookings() {
+    try {
+        const response = await fetch(`${API_URL}/bookings`);
+        const bookings = await response.json();
+        const tbody = document.getElementById('bookings-table-body');
+
+        tbody.innerHTML = '';
+
+        bookings.forEach(b => {
+            const now = new Date();
+            const start = new Date(b.start_time);
+            const end = new Date(b.end_time);
+
+            let statusBadge = '<span class="status-badge" style="background:rgba(255,255,255,0.1); color:#ccc;">Upcoming</span>';
+            if (now >= start && now < end) {
+                statusBadge = '<span class="status-badge status-occupied">Active</span>';
+            } else if (now >= end) {
+                statusBadge = '<span class="status-badge" style="background:rgba(255,255,255,0.05); color:#666;">Completed</span>';
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${b.resource_name}</td>
+                <td>${b.resource_type}</td>
+                <td>${start.toLocaleString()}</td>
+                <td>${end.toLocaleString()}</td>
+                <td>${b.purpose}</td>
+                <td>${statusBadge}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error fetching bookings:', error);
+    }
+}
+
+async function populateResourceSelect() {
+    try {
+        const response = await fetch(`${API_URL}/resources`);
+        const resources = await response.json();
+        const select = document.getElementById('booking-resource');
+
+        select.innerHTML = '';
+        resources.forEach(r => {
+            const option = document.createElement('option');
+            option.value = r.id;
+            // E.g. "Seminar Hall A (HALL)"
+            option.textContent = `${r.name} (${r.type})`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error fetching resources for select:', error);
+    }
 }

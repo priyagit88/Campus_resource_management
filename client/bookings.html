@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookings - Campus CRM</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Modal -->
+    <div id="booking-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>New Booking</h2>
+            <form id="booking-form">
+                <div class="form-group">
+                    <label>Resource</label>
+                    <select id="booking-resource" required>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Start Time</label>
+                    <input type="datetime-local" id="booking-start" required>
+                </div>
+                <div class="form-group">
+                    <label>End Time</label>
+                    <input type="datetime-local" id="booking-end" required>
+                </div>
+                <div class="form-group">
+                    <label>Purpose / Event Name</label>
+                    <input type="text" id="booking-purpose" placeholder="e.g. CS101 Lecture" required>
+                </div>
+                <button type="submit" class="cta-btn">Confirm Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="brand">
+            <span class="material-icons">school</span>
+            CRM
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><span class="material-icons">dashboard</span> Dashboard</a></li>
+            <li><a href="resources.html"><span class="material-icons">meeting_room</span> Resources</a></li>
+            <li><a href="bookings.html" class="active"><span class="material-icons">class</span> Bookings</a></li>
+            <li><a href="#"><span class="material-icons">settings</span> Settings</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2>Bookings</h2>
+                <p style="color: var(--text-muted);">Schedule and manage reservations</p>
+            </div>
+            <button id="new-booking-btn" class="cta-btn"><span class="material-icons">add</span> New Booking</button>
+        </header>
+
+        <div class="card resources-list">
+            <h3>Recent Bookings</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Resource</th>
+                        <th>Type</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Purpose</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="bookings-table-body">
+                    <!-- Data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Just like resources, we might init specific logic here if not in main app.js
+        });
+    </script>
+</body>
+
+</html>
