@@ -235,10 +235,17 @@ async function loadBookingsPage() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const startVal = document.getElementById('booking-start').value;
+        const endVal = document.getElementById('booking-end').value;
+
+        // Convert to ISO UTC Strings to ensure consistency server-side
+        const startDate = new Date(startVal);
+        const endDate = new Date(endVal);
+
         const bookingData = {
             resource_id: document.getElementById('booking-resource').value,
-            start_time: document.getElementById('booking-start').value,
-            end_time: document.getElementById('booking-end').value,
+            start_time: startDate.toISOString(),
+            end_time: endDate.toISOString(),
             purpose: document.getElementById('booking-purpose').value
         };
 
@@ -285,12 +292,23 @@ async function fetchBookings() {
                 statusBadge = '<span class="status-badge" style="background:rgba(255,255,255,0.05); color:#666;">Completed</span>';
             }
 
+            const formatDate = (date) => {
+                return new Intl.DateTimeFormat('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                }).format(date);
+            };
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${b.resource_name}</td>
                 <td>${b.resource_type}</td>
-                <td>${start.toLocaleString()}</td>
-                <td>${end.toLocaleString()}</td>
+                <td>${formatDate(start)}</td>
+                <td>${formatDate(end)}</td>
                 <td>${b.purpose}</td>
                 <td>${statusBadge}</td>
             `;
