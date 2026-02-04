@@ -152,13 +152,44 @@ th {
     font-weight: bold;
 }
 
-.status-occupied {
-    background-color: rgba(253, 93, 147, 0.2);
-    color: var(--danger);
+.status-empty {
+    background-color: rgba(0, 242, 195, 0.2);
+    color: var(--success);
 }
 
-background-color: rgba(0, 242, 195, 0.2);
-color: var(--success);
+.status-badge.status-pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.status-badge.status-rejected {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+}
+
+.status-badge.status-cancel {
+    background: rgba(255, 87, 34, 0.2);
+    color: #ff5722;
+}
+
+.cancel-btn {
+    background: rgba(255, 87, 34, 0.1);
+    color: #ff5722;
+    border: 1px solid rgba(255, 87, 34, 0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    margin-left: 5px;
+    transition: all 0.3s;
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 87, 34, 0.2);
+}
+
+.admin-only {
+    display: none;
 }
 
 /* Resources Page Extras */

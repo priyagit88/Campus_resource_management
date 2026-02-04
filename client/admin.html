@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Campus CRM</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="auth.js"></script>
+    <style>
+        .admin-dashboard {
+            margin-top: 20px;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .approve-btn {
+            background: var(--primary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: none;
+            font-size: 0.8rem;
+        }
+
+        .reject-btn {
+            background: var(--warning);
+            color: black;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: none;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="brand">
+            <span class="material-icons">school</span>
+            CRM
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><span class="material-icons">dashboard</span> Dashboard</a></li>
+            <li><a href="resources.html"><span class="material-icons">meeting_room</span> Resources</a></li>
+            <li><a href="bookings.html"><span class="material-icons">class</span> Bookings</a></li>
+            <li><a href="profile.html"><span class="material-icons">person</span> Profile</a></li>
+            <li class="admin-only"><a href="admin.html" class="active"><span
+                        class="material-icons">admin_panel_settings</span> Requests</a></li>
+            <li><a href="#" onclick="Auth.logout()"><span class="material-icons">logout</span> Logout</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <div class="header-left">
+                <h2>Admin Management</h2>
+                <p style="color: var(--text-muted);">Review and approve booking requests</p>
+            </div>
+            <div class="user-info">
+                <span class="material-icons">notifications</span>
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=764ba2&color=fff" alt="Admin">
+                    <span>Admin User</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="admin-dashboard">
+            <div class="card">
+                <h3>Requested Bookings</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Requester</th>
+                            <th>Time Slot</th>
+                            <th>Purpose</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-pending-table">
+                        <!-- Pending requests will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card" style="margin-top: 30px;">
+                <h3>Cancellation Requests</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Requester</th>
+                            <th>Time Slot</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-cancel-table">
+                        <!-- Cancellation requests will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card" style="margin-top: 30px;">
+                <h3>History</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Requester</th>
+                            <th>Time Slot</th>
+                            <th>Purpose</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-history-table">
+                        <!-- History will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.location.pathname.includes('admin.html')) {
+                loadAdminPage();
+            }
+        });
+
+        async function loadAdminPage() {
+            try {
+                const response = await fetch('/api/bookings', {
+                    headers: Auth.getAuthHeader()
+                });
+                const bookings = await response.json();
+
+                const pendingTbody = document.getElementById('admin-pending-table');
+                const cancelTbody = document.getElementById('admin-cancel-table');
+                const historyTbody = document.getElementById('admin-history-table');
+
+                pendingTbody.innerHTML = '';
+                cancelTbody.innerHTML = '';
+                historyTbody.innerHTML = '';
+
+                bookings.forEach(b => {
+                    const row = document.createElement('tr');
+                    const timeStr = `${new Date(b.start_time).toLocaleString()} - ${new Date(b.end_time).toLocaleTimeString()}`;
+
+                    if (b.status === 'PENDING') {
+                        row.innerHTML = `
+                            <td>${b.resource_name}</td>
+                            <td>${b.requester}</td>
+                            <td>${timeStr}</td>
+                            <td>${b.purpose}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="approve-btn" onclick="updateBookingStatus(${b.id}, 'APPROVED')">Approve</button>
+                                    <button class="reject-btn" onclick="updateBookingStatus(${b.id}, 'REJECTED')">Reject</button>
+                                </div>
+                            </td>
+                        `;
+                        pendingTbody.appendChild(row);
+                    } else if (b.status === 'CANCEL_REQUESTED') {
+                        row.innerHTML = `
+                            <td>${b.resource_name}</td>
+                            <td>${b.requester}</td>
+                            <td>${timeStr}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="approve-btn" style="background:#ff5722;" onclick="updateBookingStatus(${b.id}, 'CANCEL_APPROVED')">Confirm Delete</button>
+                                    <button class="reject-btn" onclick="updateBookingStatus(${b.id}, 'CANCEL_REJECTED')">Keep Booking</button>
+                                </div>
+                            </td>
+                        `;
+                        cancelTbody.appendChild(row);
+                    } else {
+                        let statusClass = 'status-empty';
+                        if (b.status === 'APPROVED') statusClass = 'status-occupied';
+                        if (b.status === 'REJECTED') statusClass = 'status-rejected';
+                        if (b.status === 'CANCELLED') statusClass = 'status-cancel';
+
+                        row.innerHTML = `
+                            <td>${b.resource_name}</td>
+                            <td>${b.requester}</td>
+                            <td>${timeStr}</td>
+                            <td>${b.purpose || '-'}</td>
+                            <td><span class="status-badge ${statusClass}">${b.status}</span></td>
+                        `;
+                        historyTbody.appendChild(row);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading admin page:', error);
+            }
+        }
+
+        async function updateBookingStatus(id, status) {
+            try {
+                const response = await fetch(`/api/bookings/${id}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeader()
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                if (response.ok) {
+                    loadAdminPage(); // Reload list
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error}`);
+                }
+            } catch (err) {
+                console.error('Update failed:', err);
+            }
+        }
+    </script>
+</body>
+
+</html>

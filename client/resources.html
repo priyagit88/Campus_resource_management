@@ -7,6 +7,7 @@
     <title>Resources - Campus CRM</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="auth.js"></script>
 </head>
 
 <body>
@@ -20,7 +21,11 @@
             <li><a href="resources.html" class="active"><span class="material-icons">meeting_room</span> Resources</a>
             </li>
             <li><a href="bookings.html"><span class="material-icons">class</span> Bookings</a></li>
+            <li><a href="profile.html"><span class="material-icons">person</span> Profile</a></li>
+            <li class="admin-only"><a href="admin.html"><span class="material-icons">admin_panel_settings</span>
+                    Requests</a></li>
             <li><a href="#"><span class="material-icons">settings</span> Settings</a></li>
+            <li><a href="#" onclick="Auth.logout()"><span class="material-icons">logout</span> Logout</a></li>
         </ul>
     </div>
 

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Campus CRM</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="auth.js"></script>
+    <style>
+        .profile-card {
+            max-width: 600px;
+            margin: 40px auto;
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 3rem;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-info {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .info-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: white;
+            font-weight: 600;
+        }
+
+        .profile-actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="brand">
+            <span class="material-icons">school</span>
+            CRM
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><span class="material-icons">dashboard</span> Dashboard</a></li>
+            <li><a href="resources.html"><span class="material-icons">meeting_room</span> Resources</a></li>
+            <li><a href="bookings.html"><span class="material-icons">class</span> Bookings</a></li>
+            <li><a href="profile.html" class="active"><span class="material-icons">person</span> Profile</a></li>
+            <li class="admin-only"><a href="admin.html"><span class="material-icons">admin_panel_settings</span>
+                    Requests</a></li>
+            <li><a href="#" onclick="Auth.logout()"><span class="material-icons">logout</span> Logout</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h2>My Profile</h2>
+            <p style="color: var(--text-muted);">Manage your account and preferences</p>
+        </header>
+
+        <div class="card profile-card">
+            <div class="profile-avatar">
+                <span class="material-icons" style="font-size: 4rem;">person</span>
+            </div>
+            <h2 id="profile-username-header">Loading...</h2>
+            <p id="profile-role-badge"
+                style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: rgba(255,255,255,0.1); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">
+                User</p>
+
+            <div class="profile-info">
+                <div class="info-row">
+                    <span class="info-label">User ID</span>
+                    <span class="info-value" id="profile-id">#---</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Username</span>
+                    <span class="info-value" id="profile-username">---</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Current Role</span>
+                    <span class="info-value" id="profile-role">---</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Member Since</span>
+                    <span class="info-value" id="profile-joined">---</span>
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <button class="cta-btn" onclick="alert('Password reset link sent to your campus email!')"
+                    style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1);">Change
+                    Password</button>
+                <button class="cta-btn" onclick="Auth.logout()" style="background: var(--warning); color: black;">Sign
+                    Out</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.location.pathname.includes('profile.html')) {
+                loadProfilePage();
+            }
+        });
+    </script>
+</body>
+
+</html>

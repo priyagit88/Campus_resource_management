@@ -1,13 +1,21 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Check authentication first
+    if (typeof Auth !== 'undefined') {
+        Auth.checkAuth();
+    }
+
     // Determine which page we are on
     const path = window.location.pathname;
     if (path.includes('resources.html')) {
         loadResourcesPage();
     } else if (path.includes('bookings.html')) {
         loadBookingsPage();
-    } else {
+    } else if (path.includes('profile.html')) {
+        // Handled by inline script or could move here
+        // loadProfilePage(); 
+    } else if (path.includes('index.html') || path === '/') {
         // Dashboard by default
         fetchResources();
         fetchStats();
@@ -18,7 +26,9 @@ async function fetchStats() {
     // In a real app, this would be a dedicated stats endpoint
     // For now, calculating from resources
     try {
-        const response = await fetch(`${API_URL}/resources`);
+        const response = await fetch(`${API_URL}/resources`, {
+            headers: Auth.getAuthHeader()
+        });
         const data = await response.json();
 
         const total = data.length;
@@ -39,7 +49,9 @@ async function fetchStats() {
 
 async function fetchResources() {
     try {
-        const response = await fetch(`${API_URL}/resources`);
+        const response = await fetch(`${API_URL}/resources`, {
+            headers: Auth.getAuthHeader()
+        });
         const resources = await response.json();
         const tbody = document.getElementById('resource-table-body');
 
@@ -140,7 +152,9 @@ let allResources = [];
 
 async function loadResourcesPage() {
     try {
-        const response = await fetch(`${API_URL}/resources`);
+        const response = await fetch(`${API_URL}/resources`, {
+            headers: Auth.getAuthHeader()
+        });
         allResources = await response.json();
 
         const grid = document.getElementById('resources-grid');
@@ -252,7 +266,10 @@ async function loadBookingsPage() {
         try {
             const response = await fetch(`${API_URL}/bookings`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...Auth.getAuthHeader()
+                },
                 body: JSON.stringify(bookingData)
             });
 
@@ -274,22 +291,45 @@ async function loadBookingsPage() {
 
 async function fetchBookings() {
     try {
-        const response = await fetch(`${API_URL}/bookings`);
+        const response = await fetch(`${API_URL}/bookings`, {
+            headers: Auth.getAuthHeader()
+        });
         const bookings = await response.json();
-        const tbody = document.getElementById('bookings-table-body');
 
-        tbody.innerHTML = '';
+        const myTbody = document.getElementById('my-bookings-table-body');
+        const historyTbody = document.getElementById('my-history-table-body');
+        const globalHistoryTbody = document.getElementById('global-history-table-body');
+        const otherTbody = document.getElementById('other-bookings-table-body');
+
+        if (!myTbody || !otherTbody) return; // Not on bookings page
+
+        myTbody.innerHTML = '';
+        if (historyTbody) historyTbody.innerHTML = '';
+        if (globalHistoryTbody) globalHistoryTbody.innerHTML = '';
+        otherTbody.innerHTML = '';
 
         bookings.forEach(b => {
-            const now = new Date();
             const start = new Date(b.start_time);
             const end = new Date(b.end_time);
+            const now = new Date();
 
-            let statusBadge = '<span class="status-badge" style="background:rgba(255,255,255,0.1); color:#ccc;">Upcoming</span>';
-            if (now >= start && now < end) {
-                statusBadge = '<span class="status-badge status-occupied">Active</span>';
-            } else if (now >= end) {
-                statusBadge = '<span class="status-badge" style="background:rgba(255,255,255,0.05); color:#666;">Completed</span>';
+            let statusBadge = '';
+            if (b.status === 'PENDING') {
+                statusBadge = '<span class="status-badge status-pending">Requested</span>';
+            } else if (b.status === 'CANCEL_REQUESTED') {
+                statusBadge = '<span class="status-badge status-cancel">Cancellation Pending</span>';
+            } else if (b.status === 'CANCELLED') {
+                statusBadge = '<span class="status-badge" style="background:rgba(0,0,0,0.2); color:#999;">Cancelled</span>';
+            } else if (b.status === 'REJECTED') {
+                statusBadge = '<span class="status-badge status-rejected">Rejected</span>';
+            } else {
+                if (now >= start && now < end) {
+                    statusBadge = '<span class="status-badge status-occupied">Active</span>';
+                } else if (now >= end) {
+                    statusBadge = '<span class="status-badge" style="background:rgba(255,255,255,0.05); color:#666;">Completed</span>';
+                } else {
+                    statusBadge = '<span class="status-badge" style="background:rgba(255,255,255,0.1); color:#ccc;">Confirmed</span>';
+                }
             }
 
             const formatDate = (date) => {
@@ -304,24 +344,114 @@ async function fetchBookings() {
             };
 
             const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${b.resource_name}</td>
-                <td>${b.resource_type}</td>
-                <td>${formatDate(start)}</td>
-                <td>${formatDate(end)}</td>
-                <td>${b.purpose}</td>
-                <td>${statusBadge}</td>
-            `;
-            tbody.appendChild(row);
+            if (b.is_mine) {
+                const isHistory = b.status === 'CANCELLED' || b.status === 'REJECTED' || now >= end;
+
+                if (isHistory && historyTbody) {
+                    row.innerHTML = `
+                        <td>${b.resource_name}</td>
+                        <td>${b.resource_type}</td>
+                        <td>${formatDate(start)} - ${new Date(b.end_time).toLocaleTimeString()}</td>
+                        <td>${b.purpose}</td>
+                        <td>${statusBadge}</td>
+                    `;
+                    historyTbody.appendChild(row);
+                } else {
+                    row.innerHTML = `
+                        <td>${b.resource_name}</td>
+                        <td>${b.resource_type}</td>
+                        <td>${formatDate(start)}</td>
+                        <td>${formatDate(end)}</td>
+                        <td>${b.purpose}</td>
+                        <td>${statusBadge}</td>
+                    `;
+                    myTbody.appendChild(row);
+
+                    // Add cancel/finish-early button logic
+                    let showButton = false;
+                    let btnText = 'Request Cancel';
+
+                    if (b.status === 'PENDING') {
+                        showButton = true;
+                        btnText = 'Cancel Request';
+                    } else if (b.status === 'APPROVED') {
+                        if (now < end) {
+                            showButton = true;
+                            if (now >= start) {
+                                btnText = 'Finish Early';
+                            }
+                        }
+                    }
+
+                    const cancelCol = document.createElement('td');
+                    if (showButton && b.status !== 'CANCEL_REQUESTED') {
+                        const cancelBtn = document.createElement('button');
+                        cancelBtn.innerText = btnText;
+                        cancelBtn.className = 'cancel-btn';
+                        cancelBtn.onclick = () => requestCancellation(b.id);
+                        cancelCol.appendChild(cancelBtn);
+                    }
+                    row.appendChild(cancelCol);
+                }
+            } else {
+                const isHistory = b.status === 'CANCELLED' || b.status === 'REJECTED' || now >= end;
+
+                if (isHistory) {
+                    if (globalHistoryTbody) {
+                        row.innerHTML = `
+                            <td>${b.resource_name}</td>
+                            <td>${b.resource_type}</td>
+                            <td>${b.requester}</td>
+                            <td>${formatDate(start)} - ${new Date(b.end_time).toLocaleTimeString()}</td>
+                            <td>${b.purpose}</td>
+                            <td>${statusBadge}</td>
+                        `;
+                        globalHistoryTbody.appendChild(row);
+                    }
+                } else {
+                    // Only show active/upcoming occupancy
+                    row.innerHTML = `
+                        <td>${b.resource_name}</td>
+                        <td>${b.resource_type}</td>
+                        <td>${b.requester}</td>
+                        <td>${formatDate(start)}</td>
+                        <td>${formatDate(end)}</td>
+                        <td>${b.purpose}</td>
+                        <td>${statusBadge}</td>
+                    `;
+                    otherTbody.appendChild(row);
+                }
+            }
         });
-    } catch (error) {
-        console.error('Error fetching bookings:', error);
+    } catch (err) {
+        console.error('Error fetching bookings:', err);
+    }
+}
+
+async function requestCancellation(id) {
+    if (!confirm('Are you sure you want to request cancellation for this booking? This requires admin approval.')) return;
+    try {
+        const response = await fetch(`${API_URL}/bookings/${id}/cancel`, {
+            method: 'POST',
+            headers: Auth.getAuthHeader()
+        });
+        if (response.ok) {
+            alert('Cancellation request sent to admin.');
+            fetchBookings();
+        } else {
+            const error = await response.json();
+            alert(`Error: ${error.error}`);
+        }
+    } catch (err) {
+        console.error('Cancel request failed:', err);
     }
 }
 
 async function populateResourceSelect() {
     try {
-        const response = await fetch(`${API_URL}/resources`);
+        const response = await fetch(`${API_URL}/resources`, {
+            headers: Auth.getAuthHeader()
+        });
         const resources = await response.json();
         const select = document.getElementById('booking-resource');
 
@@ -335,5 +465,37 @@ async function populateResourceSelect() {
         });
     } catch (error) {
         console.error('Error fetching resources for select:', error);
+    }
+}
+
+async function loadProfilePage() {
+    try {
+        const response = await fetch(`${API_URL}/auth/me`, {
+            headers: Auth.getAuthHeader()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch profile');
+        }
+
+        const user = await response.json();
+
+        // Populate UI
+        document.getElementById('profile-username-header').textContent = user.username;
+        document.getElementById('profile-username').textContent = user.username;
+        document.getElementById('profile-id').textContent = `#${user.id}`;
+        document.getElementById('profile-role').textContent = user.role;
+        document.getElementById('profile-role-badge').textContent = user.role;
+
+        const joinedDate = new Date(user.created_at).toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        document.getElementById('profile-joined').textContent = joinedDate;
+
+    } catch (error) {
+        console.error('Error loading profile page:', error);
+        alert('Could not load profile information.');
     }
 }
