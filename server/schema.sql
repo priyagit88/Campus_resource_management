@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
 INSERT INTO users (username, password_hash, role) 
 VALUES 
 ('admin', '$2a$10$vI8A7ugYvjD/LAnT/Xks8OTpM.vL2Fz7m5Q.tB1R1hWfS/tQ1YI.W', 'admin'),
-('admin123', '$2a$10$vI8A7ugYvjD/LAnT/Xks8OTpM.vL2Fz7m5Q.tB1R1hWfS/tQ1YI.W', 'admin') -- admin123 with password admin123
+('admin123', '$2a$10$LPzJoLyyfJ3VaNYM0xKtq.MJa77d9KoKQ798Zh2UO2pezVYcn0XRm', 'admin') -- admin123 with password admin123
 ON CONFLICT (username) DO NOTHING;
 
 

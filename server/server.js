@@ -342,6 +342,102 @@ app.post('/api/seed', async (req, res) => {
     }
 });
 
+// API: Get utilization stats
+app.get('/api/reports/utilization', authenticateToken, isAdmin, async (req, res) => {
+    const { period } = req.query; // week, month, year
+
+    if (!['week', 'month', 'year'].includes(period)) {
+        return res.status(400).json({ error: 'Invalid period. Use week, month, or year.' });
+    }
+
+    try {
+        const now = new Date();
+        let startDate = new Date();
+
+        if (period === 'week') {
+            startDate.setDate(now.getDate() - 7);
+        } else if (period === 'month') {
+            startDate.setMonth(now.getMonth() - 1);
+        } else if (period === 'year') {
+            startDate.setFullYear(now.getFullYear() - 1);
+        }
+
+        const query = `
+            SELECT 
+                r.name, 
+                r.type,
+                COUNT(b.id) as booking_count,
+                COALESCE(SUM(EXTRACT(EPOCH FROM (b.end_time - b.start_time))/3600), 0) as total_hours
+            FROM resources r
+            LEFT JOIN bookings b ON r.id = b.resource_id 
+                AND b.status = 'APPROVED'
+                AND b.start_time >= $1
+            GROUP BY r.id, r.name, r.type
+            ORDER BY total_hours DESC
+        `;
+
+        const result = await pool.query(query, [startDate]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to generate report' });
+    }
+});
+
+// API: Download utilization report as CSV
+app.get('/api/reports/utilization/download', authenticateToken, isAdmin, async (req, res) => {
+    const { period } = req.query;
+
+    if (!['week', 'month', 'year'].includes(period)) {
+        return res.status(400).json({ error: 'Invalid period' });
+    }
+
+    try {
+        const now = new Date();
+        let startDate = new Date();
+
+        if (period === 'week') {
+            startDate.setDate(now.getDate() - 7);
+        } else if (period === 'month') {
+            startDate.setMonth(now.getMonth() - 1);
+        } else if (period === 'year') {
+            startDate.setFullYear(now.getFullYear() - 1);
+        }
+
+        const query = `
+            SELECT 
+                r.name, 
+                r.type,
+                COUNT(b.id) as booking_count,
+                COALESCE(SUM(EXTRACT(EPOCH FROM (b.end_time - b.start_time))/3600), 0) as total_hours
+            FROM resources r
+            LEFT JOIN bookings b ON r.id = b.resource_id 
+                AND b.status = 'APPROVED'
+                AND b.start_time >= $1
+            GROUP BY r.id, r.name, r.type
+            ORDER BY total_hours DESC
+        `;
+
+        const result = await pool.query(query, [startDate]);
+
+        // Generate CSV manually
+        const fields = ['Resource Name', 'Type', 'Total Bookings', 'Total Hours Booked'];
+        let csv = fields.join(',') + '\n';
+
+        result.rows.forEach(row => {
+            csv += `"${row.name}","${row.type}",${row.booking_count},${parseFloat(row.total_hours).toFixed(2)}\n`;
+        });
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`utilization_report_${period}.csv`);
+        res.send(csv);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to download report' });
+    }
+});
+
 // Serve static files AFTER API routes
 app.use(express.static(path.join(__dirname, '../client')));
 

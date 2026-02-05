@@ -13,6 +13,31 @@
             margin-top: 20px;
         }
 
+        .report-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .report-controls select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .download-btn {
+            background: #2196f3;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
         .action-btns {
             display: flex;
             gap: 10px;
@@ -125,6 +150,34 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="card" style="margin-top: 30px;">
+                <h3>Resource Utilization</h3>
+                <div class="report-controls">
+                    <label for="report-period">Time Period:</label>
+                    <select id="report-period" onchange="loadUtilizationReport()">
+                        <option value="week">Past Week</option>
+                        <option value="month">Past Month</option>
+                        <option value="year">Past Year</option>
+                    </select>
+                    <button class="download-btn" onclick="downloadReport()">
+                        <span class="material-icons">download</span> Download Report
+                    </button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Type</th>
+                            <th>Total Bookings</th>
+                            <th>Total Hours Booked</th>
+                        </tr>
+                    </thead>
+                    <tbody id="utilization-table">
+                        <!-- Utilization data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
         </section>
     </div>
 
@@ -133,6 +186,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (window.location.pathname.includes('admin.html')) {
                 loadAdminPage();
+                loadUtilizationReport();
             }
         });
 
@@ -222,6 +276,57 @@
                 }
             } catch (err) {
                 console.error('Update failed:', err);
+            }
+        }
+
+        async function loadUtilizationReport() {
+            const period = document.getElementById('report-period').value;
+            const tbody = document.getElementById('utilization-table');
+
+            try {
+                const response = await fetch(`/api/reports/utilization?period=${period}`, {
+                    headers: Auth.getAuthHeader()
+                });
+                const data = await response.json();
+
+                tbody.innerHTML = '';
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.name}</td>
+                        <td>${item.type}</td>
+                        <td>${item.booking_count}</td>
+                        <td>${parseFloat(item.total_hours).toFixed(2)} hrs</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (err) {
+                console.error('Error loading report:', err);
+            }
+        }
+
+        async function downloadReport() {
+            const period = document.getElementById('report-period').value;
+            try {
+                const response = await fetch(`/api/reports/utilization/download?period=${period}`, {
+                    headers: Auth.getAuthHeader()
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `utilization_report_${period}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert('Failed to download report');
+                }
+            } catch (err) {
+                console.error('Download failed:', err);
             }
         }
     </script>
