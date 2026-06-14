@@ -36,12 +36,12 @@ app.get('/api/availability', require('./controllers/resourceController').getAvai
 app.post('/api/seed', require('./controllers/adminController').seedData);
 
 // Static files
-app.use(express.static(path.join(__dirname, '../client')));
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // 404 handler
 app.use((req, res, next) => {
     if (!req.path.startsWith('/api')) {
-        return res.sendFile(path.join(__dirname, '../client/index.html'));
+        return res.sendFile(path.join(__dirname, '../client/dist/index.html'));
     }
     res.status(404).json({ error: 'Endpoint not found' });
 });

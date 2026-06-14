@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Resource Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="auth.js"></script>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="brand">
+            <span class="material-icons">school</span>
+            CRM
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active"><span class="material-icons">dashboard</span> Dashboard</a></li>
+            <li><a href="resources.html"><span class="material-icons">meeting_room</span> Resources</a></li>
+            <li><a href="bookings.html"><span class="material-icons">class</span> Bookings</a></li>
+            <li><a href="profile.html"><span class="material-icons">person</span> Profile</a></li>
+            <li class="admin-only"><a href="admin.html"><span class="material-icons">admin_panel_settings</span>
+                    Requests</a></li>
+            <li><a href="#"><span class="material-icons">settings</span> Settings</a></li>
+            <li><a href="#" onclick="Auth.logout()"><span class="material-icons">logout</span> Logout</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h2>Dashboard</h2>
+            <p style="color: var(--text-muted);">Overview of Campus Resources</p>
+        </header>
+
+        <div class="stats-grid">
+            <div class="card stat-card">
+                <h3>Total Resources</h3>
+                <div class="value" id="total-resources">0</div>
+            </div>
+            <div class="card stat-card">
+                <h3>Currently Occupied</h3>
+                <div class="value" id="occupied-count" style="color: var(--warning);">0</div>
+            </div>
+            <div class="card stat-card">
+                <h3>Free Halls</h3>
+                <div class="value" id="free-halls">0</div>
+            </div>
+            <div class="card stat-card">
+                <h3>Labs Available</h3>
+                <div class="value" id="free-labs">0</div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="card">
+                <h3>Resource Utilization</h3>
+                <div class="chart-container">
+                    <canvas id="utilizationChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Type Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card resources-list">
+            <h3>Live Resource Status</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Capacity</th>
+                        <th>Status</th>
+                        <th>Features</th>
+                    </tr>
+                </thead>
+                <tbody id="resource-table-body">
+                    <!-- Data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
