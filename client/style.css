@@ -1,13 +1,15 @@
 :root {
-    --primary-color: #4a90e2;
-    --secondary-color: #50e3c2;
-    --bg-dark: #1e1e2f;
-    --bg-card: #27293d;
-    --text-main: #ffffff;
-    --text-muted: #9a9a9a;
-    --danger: #fd5d93;
-    --warning: #ff8d72;
-    --success: #00f2c3;
+    --primary-color: #0ea5e9;
+    --primary-light: #bae6fd;
+    --secondary-color: #06b6d4;
+    --bg-dark: #f0f9ff;
+    --bg-card: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --border-color: rgba(14, 165, 233, 0.1);
 }
 
 * {
@@ -31,7 +33,7 @@ body {
     padding: 20px;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid var(--border-color);
 }
 
 .brand {
@@ -97,7 +99,8 @@ h2 {
     background-color: var(--bg-card);
     padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
 }
 
 .stat-card h3 {
@@ -136,7 +139,7 @@ th,
 td {
     padding: 15px;
     text-align: left;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-color);
 }
 
 th {
@@ -209,12 +212,13 @@ th {
     padding: 10px 15px;
     border-radius: 8px;
     width: 300px;
+    border: 1px solid var(--border-color);
 }
 
 .search-box input {
     background: transparent;
     border: none;
-    color: white;
+    color: var(--text-main);
     margin-left: 10px;
     width: 100%;
     outline: none;
@@ -222,7 +226,7 @@ th {
 
 .filter-btn {
     background-color: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
     color: var(--text-muted);
     padding: 8px 16px;
     border-radius: 6px;
@@ -248,11 +252,13 @@ th {
     background-color: var(--bg-card);
     border-radius: 12px;
     padding: 20px;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid var(--border-color);
 }
 
 .resource-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 .rc-header {
@@ -269,7 +275,7 @@ th {
 
 .rc-type {
     font-size: 0.8rem;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--bg-dark);
     padding: 4px 8px;
     border-radius: 4px;
     color: var(--text-muted);
@@ -291,7 +297,7 @@ th {
 .rc-features {
     font-size: 0.85rem;
     color: var(--text-muted);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--border-color);
     padding-top: 10px;
 }
 
@@ -331,12 +337,12 @@ th {
     background-color: var(--bg-card);
     margin: 10% auto;
     padding: 30px;
-    border: 1px solid #888;
+    border: 1px solid var(--border-color);
     width: 90%;
     max-width: 500px;
     border-radius: 12px;
     position: relative;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
 .close-modal {
@@ -366,10 +372,10 @@ th {
 .form-group select {
     width: 100%;
     padding: 10px;
-    background-color: var(--bg-dark);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
     border-radius: 6px;
-    color: white;
+    color: var(--text-main);
     font-size: 1rem;
     outline: none;
 }

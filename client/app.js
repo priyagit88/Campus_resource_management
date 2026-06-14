@@ -102,7 +102,7 @@ function renderCharts(data) {
                     data.filter(r => r.type === 'CLASSROOM' && r.occupied).length,
                     data.filter(r => r.type === 'LAB' && r.occupied).length
                 ],
-                backgroundColor: '#fd5d93'
+                backgroundColor: '#ef4444' // Danger red
             }, {
                 label: 'Free',
                 data: [
@@ -110,18 +110,26 @@ function renderCharts(data) {
                     data.filter(r => r.type === 'CLASSROOM' && !r.occupied).length,
                     data.filter(r => r.type === 'LAB' && !r.occupied).length
                 ],
-                backgroundColor: '#00f2c3'
+                backgroundColor: '#10b981' // Emerald green
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: { stacked: true },
-                y: { stacked: true }
+                x: {
+                    stacked: true,
+                    grid: { display: false },
+                    ticks: { color: '#64748b' }
+                },
+                y: {
+                    stacked: true,
+                    grid: { color: 'rgba(14, 165, 233, 0.05)' },
+                    ticks: { color: '#64748b' }
+                }
             },
             plugins: {
-                legend: { labels: { color: 'white' } }
+                legend: { labels: { color: '#0f172a', font: { weight: 'bold' } } }
             }
         }
     });
@@ -133,7 +141,7 @@ function renderCharts(data) {
             labels: ['Halls', 'Classrooms', 'Labs'],
             datasets: [{
                 data: [typeCounts.HALL, typeCounts.CLASSROOM, typeCounts.LAB],
-                backgroundColor: ['#4a90e2', '#50e3c2', '#ff8d72'],
+                backgroundColor: ['#0ea5e9', '#06b6d4', '#f59e0b'],
                 borderWidth: 0
             }]
         },
@@ -141,7 +149,7 @@ function renderCharts(data) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom', labels: { color: 'white' } }
+                legend: { position: 'bottom', labels: { color: '#0f172a', font: { weight: 'bold' } } }
             }
         }
     });
@@ -205,6 +213,8 @@ function renderResourceGrid(resources) {
             <div class="rc-details">
                 <div><span class="material-icons" style="font-size: 16px;">people</span> Capacity: ${r.capacity}</div>
                 ${r.current_purpose ? `<div><span class="material-icons" style="font-size: 16px;">event</span> ${r.current_purpose}</div>` : ''}
+                ${r.current_semester ? `<div><span class="material-icons" style="font-size: 16px;">groups</span> ${r.current_semester}</div>` : ''}
+                ${r.current_subject ? `<div><span class="material-icons" style="font-size: 16px;">book</span> ${r.current_subject}</div>` : ''}
             </div>
             <div class="rc-features">
                 ${r.features || 'No specific features'}
@@ -260,7 +270,9 @@ async function loadBookingsPage() {
             resource_id: document.getElementById('booking-resource').value,
             start_time: startDate.toISOString(),
             end_time: endDate.toISOString(),
-            purpose: document.getElementById('booking-purpose').value
+            purpose: document.getElementById('booking-purpose').value,
+            semester: document.getElementById('booking-semester').value,
+            subject: document.getElementById('booking-subject').value
         };
 
         try {
@@ -497,5 +509,229 @@ async function loadProfilePage() {
     } catch (error) {
         console.error('Error loading profile page:', error);
         alert('Could not load profile information.');
+    }
+}
+
+// --- NEW FEATURES: Availability & Timetable ---
+
+async function loadAvailabilityGrid() {
+    const dateInput = document.getElementById('avail-date');
+    if (!dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    const date = dateInput.value;
+    const grid = document.getElementById('availability-grid');
+    if (!grid) return;
+
+    try {
+        grid.innerHTML = '<p style="padding: 20px;">Loading availability data...</p>';
+        console.log(`Fetching availability for date: ${date}`);
+        
+        const response = await fetch(`${API_URL}/availability?date=${date}`, {
+            headers: Auth.getAuthHeader()
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const resources = await response.json();
+        console.log('Resources fetched:', resources);
+        
+        grid.innerHTML = '';
+        if (resources.length === 0) {
+            grid.innerHTML = '<p style="padding: 20px; color: var(--text-muted);">No resources found in database.</p>';
+            return;
+        }
+
+        resources.forEach(r => {
+            const card = document.createElement('div');
+            card.className = 'card avail-card';
+            
+            let bookingInfo = '<p class="status-empty" style="margin-top:10px;">Available all day</p>';
+            if (r.bookings && r.bookings.length > 0) {
+                bookingInfo = r.bookings.map(b => {
+                    const start = new Date(b.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const end = new Date(b.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const statusClass = b.status === 'BLOCKED' ? 'status-cancel' : 'status-occupied';
+                    return `
+                        <div class="avail-slot ${statusClass}" style="margin-top:10px;">
+                            <strong>${start} - ${end}</strong><br>
+                            ${b.subject || b.status} ${b.semester ? `(${b.semester})` : ''}<br>
+                            <small>${b.username || 'System'}</small>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            card.innerHTML = `
+                <h4>${r.name}</h4>
+                <div class="avail-slots-container">${bookingInfo}</div>
+            `;
+            grid.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error loading availability:', error);
+        grid.innerHTML = `<p style="padding: 20px; color: var(--danger);">Failed to load data: ${error.message}</p>`;
+    }
+}
+
+async function blockRoom() {
+    const resource_id = document.getElementById('block-resource').value;
+    const date = document.getElementById('block-date').value;
+    const start_time = document.getElementById('block-start').value;
+    const end_time = document.getElementById('block-end').value;
+    const purpose = document.getElementById('block-purpose').value;
+
+    const start = new Date(`${date}T${start_time}`);
+    const end = new Date(`${date}T${end_time}`);
+
+    try {
+        const response = await fetch(`${API_URL}/admin/block`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...Auth.getAuthHeader() },
+            body: JSON.stringify({
+                resource_id,
+                start_time: start.toISOString(),
+                end_time: end.toISOString(),
+                purpose
+            })
+        });
+
+        if (response.ok) {
+            alert('Room blocked successfully!');
+            loadAvailabilityGrid();
+        } else {
+            const err = await response.json();
+            alert(`Error: ${err.error}`);
+        }
+    } catch (error) {
+        console.error('Blocking failed:', error);
+    }
+}
+
+async function insertTimetableEntry() {
+    const data = {
+        resource_id: document.getElementById('tt-resource').value,
+        day_of_week: parseInt(document.getElementById('tt-day').value),
+        start_time: document.getElementById('tt-start').value,
+        end_time: document.getElementById('tt-end').value,
+        semester: document.getElementById('tt-semester').value,
+        subject: document.getElementById('tt-subject').value
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/admin/timetable`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...Auth.getAuthHeader() },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            alert('Timetable entry added!');
+        } else {
+            alert('Failed to add timetable entry');
+        }
+    } catch (error) {
+        console.error('Timetable insertion failed:', error);
+    }
+}
+
+async function syncTimetable() {
+    const startDate = document.getElementById('sync-start').value;
+    const endDate = document.getElementById('sync-end').value;
+
+    if (!startDate || !endDate) return alert('Select date range');
+
+    try {
+        const response = await fetch(`${API_URL}/admin/timetable/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...Auth.getAuthHeader() },
+            body: JSON.stringify({ startDate, endDate })
+        });
+        const result = await response.json();
+        alert(result.message || result.error);
+        loadAvailabilityGrid();
+    } catch (error) {
+        console.error('Sync failed:', error);
+    }
+}
+
+async function processTimetableImage() {
+    const fileInput = document.getElementById('tt-image-input');
+    const status = document.getElementById('ocr-status');
+    const btn = document.getElementById('ocr-btn');
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+        return alert('Please select an image first.');
+    }
+
+    try {
+        btn.disabled = true;
+        status.style.color = 'var(--primary-color)';
+        status.innerHTML = '<span class="material-icons" style="font-size:12px; vertical-align:middle; animation: spin 2s linear infinite;">sync</span> Preparing OCR engine...';
+        
+        // Ensure Tesseract is loaded
+        if (typeof Tesseract === 'undefined') {
+            throw new Error('OCR Library (Tesseract) not yet loaded. Please wait 5 seconds and try again.');
+        }
+
+        const { data: { text } } = await Tesseract.recognize(fileInput.files[0], 'eng', {
+            logger: m => {
+                if(m.status === 'recognizing text') {
+                    status.innerText = `Scanning image: ${Math.round(m.progress * 100)}%`;
+                }
+            }
+        });
+
+        status.innerText = 'Analyzing results...';
+        console.log('Full OCR Text:', text);
+
+        // Simple Heuristic Extraction
+        // Looking for patterns like "10:00-11:00", "Classroom 101", etc.
+        const lines = text.split('\n').filter(l => l.trim().length > 5);
+        let foundCount = 0;
+
+        // Try to find rooms we have in the system
+        const resResponse = await fetch(`${API_URL}/resources`, { headers: Auth.getAuthHeader() });
+        const systemResources = await resResponse.json();
+
+        for (const line of lines) {
+            // Regex for time e.g. 10:30 - 12:30
+            const timeMatch = line.match(/(\d{1,2}[:.]\d{2})\s*[-–to]\s*(\d{1,2}[:.]\d{2})/i);
+            if (timeMatch) {
+                const start = timeMatch[1].replace('.', ':');
+                const end = timeMatch[2].replace('.', ':');
+
+                // Try to find a resource name in this line or nearby
+                const resource = systemResources.find(r => line.toLowerCase().includes(r.name.toLowerCase()));
+                
+                if (resource) {
+                    // Auto-fill the manual form with the first match found to help the user
+                    document.getElementById('tt-resource').value = resource.id;
+                    document.getElementById('tt-start').value = start.padStart(5, '0');
+                    document.getElementById('tt-end').value = end.padStart(5, '0');
+                    
+                    // Try to guess subject (rest of the line minus times and room)
+                    let subject = line.replace(timeMatch[0], '').replace(resource.name, '').trim();
+                    if (subject) document.getElementById('tt-subject').value = subject;
+                    
+                    foundCount++;
+                    break; // Just fill the form once for now to let user confirm
+                }
+            }
+        }
+
+        if (foundCount > 0) {
+            status.style.color = 'var(--success)';
+            status.innerHTML = `<span class="material-icons" style="font-size:14px;">check_circle</span> Detected entry found! Form auto-filled.`;
+        } else {
+            status.style.color = 'var(--warning)';
+            status.innerText = 'Could not clearly identify room/time. Try again with a clearer image.';
+        }
+
+    } catch (error) {
+        console.error('OCR Error:', error);
+        status.innerText = 'Error processing image.';
+    } finally {
+        btn.disabled = false;
     }
 }

@@ -31,6 +31,10 @@ services:
       - PORT=3000
     depends_on:
       - db
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+      - ./client:/client
     networks:
       - campus_network
 
